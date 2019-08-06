@@ -1,4 +1,4 @@
-package configuration.service;
+package configuration;
 
 import io.micronaut.runtime.Micronaut;
 

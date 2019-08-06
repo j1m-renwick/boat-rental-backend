@@ -1,4 +1,4 @@
-package configuration.service;
+package configuration;
 
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.http.HttpStatus;

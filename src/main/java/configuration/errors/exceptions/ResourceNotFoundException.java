@@ -1,4 +1,4 @@
-package configuration.service.errors.exceptions;
+package configuration.errors.exceptions;
 
 public class ResourceNotFoundException extends RuntimeException {
 

@@ -1,4 +1,4 @@
-package configuration.service.request;
+package configuration.request;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -10,6 +10,7 @@ public class TripCreateRequest {
     private LocalTime startTime;
     private LocalTime endTime;
     private String notes;
+
 
     public String getJunkId() {
         return junkId;

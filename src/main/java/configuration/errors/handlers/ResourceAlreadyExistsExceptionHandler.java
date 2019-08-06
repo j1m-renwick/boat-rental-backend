@@ -1,7 +1,7 @@
-package configuration.service.errors.handlers;
+package configuration.errors.handlers;
 
-import configuration.service.errors.ErrorResponse;
-import configuration.service.errors.exceptions.ResourceAlreadyExistsException;
+import configuration.errors.ErrorResponse;
+import configuration.errors.exceptions.ResourceAlreadyExistsException;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.http.server.exceptions.ExceptionHandler;
 import io.micronaut.http.HttpRequest;

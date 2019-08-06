@@ -1,4 +1,4 @@
-package configuration.service.response;
+package configuration.response;
 
 public class CreatedResponse {
 

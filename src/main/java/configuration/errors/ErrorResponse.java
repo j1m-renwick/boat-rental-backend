@@ -1,4 +1,4 @@
-package configuration.service.errors;
+package configuration.errors;
 
 public class ErrorResponse {
 
