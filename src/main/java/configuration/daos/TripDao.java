@@ -97,16 +97,22 @@ public class TripDao {
 
     }
 
-    public Set<TripResponseItem> getTrips(Integer offset,
-                                          Integer limit,
-                                          LocalDate date,
-                                          Harbour harbour) {
+    private List<Bson> getFilterList(LocalDate date, Harbour harbour) {
 
         List<Bson> filterList = new ArrayList<>();
+
         filterList.add(date != null ? onDay(TRIP_DATE_TIME_FIELD, date) : null);
         filterList.add(harbour != null ? eq(TRIP_HARBOUR_FIELD, harbour.name()) : null);
 
         filterList.removeIf(Objects::isNull);
+
+        return filterList;
+    }
+
+    public Set<TripResponseItem> getTrips(Integer offset, Integer limit,
+                                          LocalDate date, Harbour harbour) {
+
+        List<Bson> filterList = getFilterList(date, harbour);
 
         FindIterable<TripResponseItem> foundItems;
 
@@ -123,8 +129,17 @@ public class TripDao {
 
     }
 
-    public Long getTotalCount(LocalDate date) {
-        return date != null ? collection.countDocuments(onDay(TRIP_DATE_TIME_FIELD, date)) : collection.countDocuments();
+    public Long getTotalCount(LocalDate date, Harbour harbour) {
+
+        List<Bson> filterList = getFilterList(date, harbour);
+
+        if (!filterList.isEmpty()) {
+            Bson allFilters = and(filterList);
+            return collection.countDocuments(allFilters);
+        } else {
+            return collection.countDocuments();
+        }
+
     }
 
 

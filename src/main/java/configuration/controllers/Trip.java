@@ -51,7 +51,7 @@ public class Trip {
         if (tripResults.size() == 0) {
             throw new ResourceNotFoundException();
         }
-        if (tripDao.getTotalCount(date) > (offset + limit)) {
+        if (tripDao.getTotalCount(date, harbour) > (offset + limit)) {
             response.setNext(linkService.getNextLink(offset, limit));
         }
         if ((offset > 0)) {
