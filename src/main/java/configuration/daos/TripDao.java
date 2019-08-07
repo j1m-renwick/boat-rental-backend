@@ -90,7 +90,9 @@ public class TripDao {
 
     }
 
-    public Set<TripResponseItem> getTrips(Integer offset, Integer limit, LocalDate date) {
+    public Set<TripResponseItem> getTrips(Integer offset,
+                                          Integer limit,
+                                          LocalDate date) {
 
         FindIterable<TripResponseItem> foundItems = date != null ? collection.find(onDay(TRIP_DATE_TIME_FIELD, date)) : collection.find();
 

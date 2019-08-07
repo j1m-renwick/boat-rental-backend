@@ -1,21 +1,17 @@
 package configuration.controllers;
 
 import configuration.daos.TripDao;
-import configuration.response.CreatedResponse;
 import configuration.errors.exceptions.ResourceNotFoundException;
 import configuration.request.TripCreateRequest;
+import configuration.response.CreatedResponse;
 import configuration.response.ResponseWrapper;
 import configuration.response.TripResponseItem;
 import configuration.services.LinkService;
-import io.micronaut.context.annotation.Context;
 import io.micronaut.core.convert.format.Format;
-import io.micronaut.http.HttpRequest;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.QueryValue;
-import io.micronaut.http.context.ServerRequestContext;
-import io.micronaut.http.uri.UriBuilder;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -54,10 +50,10 @@ public class Trip {
             throw new ResourceNotFoundException();
         }
         if (tripDao.getTotalCount(date) > (offset + limit)) {
-            response.setNext(linkService.getNextLink());
+            response.setNext(linkService.getNextLink(offset, limit));
         }
         if ((offset > 0)) {
-            response.setPrevious(linkService.getPreviousLink());
+            response.setPrevious(linkService.getPreviousLink(offset, limit));
         }
         response.setResources(tripResults);
         return response;

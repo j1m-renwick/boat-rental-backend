@@ -8,10 +8,10 @@ import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.function.Function;
 
 @Singleton
 public class LinkService {
+
 
     private UriBuilder getBasicUri(HttpRequest httpRequest) {
 
@@ -38,40 +38,15 @@ public class LinkService {
     }
 
     /**
+     *
+     * @param offset the offset parameter (this might be a default that overrides the user-supplied parameter)
+     * @param limit the limit parameter (this might be a default that overrides the user-supplied parameter)
      * @return the string URL of the previous link based on the query parameters given in the request.
      * If no context is found for the request, returns null.
      *
      * Any and all parameters in the request will be echoed in the response, regardless of their utility in the request.
      */
-    public String getPreviousLink() {
-
-        // offset = Math.max(offset - limit, 0)
-        Function<Map<String, String>, Map<String, String>> paramMapMutator = map -> {
-            map.put("offset", String.valueOf(Math.max(Integer.parseInt(map.get("offset")) - Integer.parseInt(map.get("limit")), 0)));
-            return map;
-        };
-
-        return assemblePageLink(paramMapMutator);
-    }
-
-    /**
-     * @return the string URL of the next link based on the query parameters given in the request.
-     * If no context is found for the request, returns null.
-     *
-     * Any and all parameters in the request will be echoed in the response, regardless of their utility in the request.
-     */
-    public String getNextLink() {
-
-        // offset = offset + limit
-        Function<Map<String, String>, Map<String, String>> paramMapMutator = map -> {
-            map.put("offset", String.valueOf(Integer.parseInt(map.get("offset")) + Integer.parseInt(map.get("limit"))));
-            return map;
-        };
-
-        return assemblePageLink(paramMapMutator);
-    }
-
-    private String assemblePageLink(Function<Map<String, String>, Map<String, String>> paramMapFunction) {
+    public String getPreviousLink(Integer offset, Integer limit) {
 
         Optional<HttpRequest<Object>> requestOptional = ServerRequestContext.currentRequest();
 
@@ -81,7 +56,40 @@ public class LinkService {
 
             Map<String, String> paramMap = request.getParameters().asMap(String.class, String.class);
 
-            paramMapFunction.apply(paramMap);
+            paramMap.put("offset", String.valueOf(Math.max(offset - limit, 0)));
+
+            // convert to TreeMap for guaranteed consistent parameter ordering in the link output
+            TreeMap<String, String> sortedMap = new TreeMap<>();
+            sortedMap.putAll(paramMap);
+
+            return addNonNullQueryParams(paramMap, getBasicUri(request))
+                    .build().toString();
+
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     *
+     * @param offset the offset parameter (this might be a default that overrides the user-supplied parameter)
+     * @param limit the limit parameter (this might be a default that overrides the user-supplied parameter)
+     * @return the string URL of the next link based on the query parameters given in the request.
+     * If no context is found for the request, returns null.
+     *
+     * Any and all parameters in the request will be echoed in the response, regardless of their utility in the request.
+     */
+    public String getNextLink(Integer offset, Integer limit) {
+
+        Optional<HttpRequest<Object>> requestOptional = ServerRequestContext.currentRequest();
+
+        if (requestOptional.isPresent()) {
+
+            HttpRequest request = requestOptional.get();
+
+            Map<String, String> paramMap = request.getParameters().asMap(String.class, String.class);
+
+            paramMap.put("offset", String.valueOf(offset + limit));
 
             // convert to TreeMap for guaranteed consistent parameter ordering in the link output
             TreeMap<String, String> sortedMap = new TreeMap<>();
