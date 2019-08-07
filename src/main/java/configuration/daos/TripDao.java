@@ -4,6 +4,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import configuration.request.TripCreateRequest;
+import configuration.response.Harbour;
 import configuration.response.TripResponseItem;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
@@ -15,11 +16,15 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
 import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.gte;
 import static com.mongodb.client.model.Filters.lt;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
@@ -33,6 +38,7 @@ public class TripDao {
     private static final PojoChecker checker = PojoChecker.of(TripResponseItem.class);
 
     private static final String TRIP_DATE_TIME_FIELD = "departureDttm";
+    private static final String TRIP_HARBOUR_FIELD = "harbour";
 
     @Inject
     private MongoClient mongoClient;
@@ -47,6 +53,7 @@ public class TripDao {
         collection = mongoClient.getDatabase("junk").withCodecRegistry(pojoCodecRegistry).getCollection("trips", TripResponseItem.class);
 
         checker.check(TRIP_DATE_TIME_FIELD);
+        checker.check(TRIP_HARBOUR_FIELD);
     }
 
     // TODO FIX THESE 2 METHODS
@@ -55,7 +62,7 @@ public class TripDao {
     public String addTrip(TripCreateRequest requestBody) {
 
         TripResponseItem item = new TripResponseItem();
-        item.setDepartureDttm(LocalDateTime.now());
+        item.setHarbour(Harbour.PORT_SHELTER);
         collection.insertOne(item);
         return "something";
 
@@ -92,9 +99,23 @@ public class TripDao {
 
     public Set<TripResponseItem> getTrips(Integer offset,
                                           Integer limit,
-                                          LocalDate date) {
+                                          LocalDate date,
+                                          Harbour harbour) {
 
-        FindIterable<TripResponseItem> foundItems = date != null ? collection.find(onDay(TRIP_DATE_TIME_FIELD, date)) : collection.find();
+        List<Bson> filterList = new ArrayList<>();
+        filterList.add(date != null ? onDay(TRIP_DATE_TIME_FIELD, date) : null);
+        filterList.add(harbour != null ? eq(TRIP_HARBOUR_FIELD, harbour.name()) : null);
+
+        filterList.removeIf(Objects::isNull);
+
+        FindIterable<TripResponseItem> foundItems;
+
+        if (!filterList.isEmpty()) {
+            Bson allFilters = and(filterList);
+            foundItems = collection.find(allFilters);
+        } else {
+            foundItems = collection.find();
+        }
 
         Set<TripResponseItem> ret = new HashSet<>();
         foundItems.skip(offset).limit(limit).forEach((Consumer<? super TripResponseItem>) ret::add);
@@ -105,7 +126,6 @@ public class TripDao {
     public Long getTotalCount(LocalDate date) {
         return date != null ? collection.countDocuments(onDay(TRIP_DATE_TIME_FIELD, date)) : collection.countDocuments();
     }
-
 
 
     // helper methods

@@ -4,6 +4,7 @@ import configuration.daos.TripDao;
 import configuration.errors.exceptions.ResourceNotFoundException;
 import configuration.request.TripCreateRequest;
 import configuration.response.CreatedResponse;
+import configuration.response.Harbour;
 import configuration.response.ResponseWrapper;
 import configuration.response.TripResponseItem;
 import configuration.services.LinkService;
@@ -42,10 +43,11 @@ public class Trip {
     @Get
     public ResponseWrapper<TripResponseItem> getTrips(@QueryValue(defaultValue = "0") Integer offset,
                                                       @QueryValue(defaultValue = "1") Integer limit,
-                                                      @QueryValue @Nullable @Format("yyyy-MM-dd") LocalDate date) {
+                                                      @QueryValue @Nullable @Format("yyyy-MM-dd") LocalDate date,
+                                                      @QueryValue @Nullable Harbour harbour) {
 
         ResponseWrapper<TripResponseItem> response = new ResponseWrapper<>();
-        Set<TripResponseItem> tripResults = tripDao.getTrips(offset, limit, date);
+        Set<TripResponseItem> tripResults = tripDao.getTrips(offset, limit, date, harbour);
         if (tripResults.size() == 0) {
             throw new ResourceNotFoundException();
         }

@@ -7,6 +7,7 @@ public class TripResponseItem extends ResponseItem {
     private String name;
     private Integer tickets;
     private String junkName;
+    private Harbour harbour;
     private LocalDateTime departureDttm;
     private String description;
 
@@ -35,6 +36,14 @@ public class TripResponseItem extends ResponseItem {
 
     public void setJunkName(String junkName) {
         this.junkName = junkName;
+    }
+
+    public Harbour getHarbour() {
+        return harbour;
+    }
+
+    public void setHarbour(Harbour harbour) {
+        this.harbour = harbour;
     }
 
     public LocalDateTime getDepartureDttm() {
