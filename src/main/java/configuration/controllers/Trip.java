@@ -7,6 +7,7 @@ import configuration.response.CreatedResponse;
 import configuration.response.Harbour;
 import configuration.response.ResponseWrapper;
 import configuration.response.TripResponseItem;
+import configuration.response.TripType;
 import configuration.services.LinkService;
 import io.micronaut.core.convert.format.Format;
 import io.micronaut.http.annotation.Controller;
@@ -44,14 +45,15 @@ public class Trip {
     public ResponseWrapper<TripResponseItem> getTrips(@QueryValue(defaultValue = "0") Integer offset,
                                                       @QueryValue(defaultValue = "1") Integer limit,
                                                       @QueryValue @Nullable @Format("yyyy-MM-dd") LocalDate date,
-                                                      @QueryValue @Nullable Harbour harbour) {
+                                                      @QueryValue @Nullable Harbour harbour,
+                                                      @QueryValue @Nullable TripType type) {
 
         ResponseWrapper<TripResponseItem> response = new ResponseWrapper<>();
-        Set<TripResponseItem> tripResults = tripDao.getTrips(offset, limit, date, harbour);
+        Set<TripResponseItem> tripResults = tripDao.getTrips(offset, limit, date, harbour, type);
         if (tripResults.size() == 0) {
             throw new ResourceNotFoundException();
         }
-        if (tripDao.getTotalCount(date, harbour) > (offset + limit)) {
+        if (tripDao.getTotalCount(date, harbour, type) > (offset + limit)) {
             response.setNext(linkService.getNextLink(offset, limit));
         }
         if ((offset > 0)) {

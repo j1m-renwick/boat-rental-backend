@@ -6,6 +6,7 @@ import com.mongodb.client.MongoCollection;
 import configuration.request.TripCreateRequest;
 import configuration.response.Harbour;
 import configuration.response.TripResponseItem;
+import configuration.response.TripType;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.conversions.Bson;
@@ -39,6 +40,7 @@ public class TripDao {
 
     private static final String TRIP_DATE_TIME_FIELD = "departureDttm";
     private static final String TRIP_HARBOUR_FIELD = "harbour";
+    private static final String TRIP_TYPE_FIELD = "type";
 
     @Inject
     private MongoClient mongoClient;
@@ -54,6 +56,7 @@ public class TripDao {
 
         checker.check(TRIP_DATE_TIME_FIELD);
         checker.check(TRIP_HARBOUR_FIELD);
+        checker.check(TRIP_TYPE_FIELD);
     }
 
     // TODO FIX THESE 2 METHODS
@@ -97,12 +100,13 @@ public class TripDao {
 
     }
 
-    private List<Bson> getFilterList(LocalDate date, Harbour harbour) {
+    private List<Bson> getFilterList(LocalDate date, Harbour harbour, TripType type) {
 
         List<Bson> filterList = new ArrayList<>();
 
         filterList.add(date != null ? onDay(TRIP_DATE_TIME_FIELD, date) : null);
         filterList.add(harbour != null ? eq(TRIP_HARBOUR_FIELD, harbour.name()) : null);
+        filterList.add(type != null ? eq(TRIP_TYPE_FIELD, type.name()) : null);
 
         filterList.removeIf(Objects::isNull);
 
@@ -110,9 +114,9 @@ public class TripDao {
     }
 
     public Set<TripResponseItem> getTrips(Integer offset, Integer limit,
-                                          LocalDate date, Harbour harbour) {
+                                          LocalDate date, Harbour harbour, TripType type) {
 
-        List<Bson> filterList = getFilterList(date, harbour);
+        List<Bson> filterList = getFilterList(date, harbour, type);
 
         FindIterable<TripResponseItem> foundItems;
 
@@ -129,9 +133,9 @@ public class TripDao {
 
     }
 
-    public Long getTotalCount(LocalDate date, Harbour harbour) {
+    public Long getTotalCount(LocalDate date, Harbour harbour, TripType type) {
 
-        List<Bson> filterList = getFilterList(date, harbour);
+        List<Bson> filterList = getFilterList(date, harbour, type);
 
         if (!filterList.isEmpty()) {
             Bson allFilters = and(filterList);
