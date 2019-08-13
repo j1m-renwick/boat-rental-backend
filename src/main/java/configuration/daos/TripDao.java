@@ -18,7 +18,9 @@ import javax.inject.Inject;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -28,6 +30,7 @@ import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.gte;
 import static com.mongodb.client.model.Filters.lt;
+import static com.mongodb.client.model.Sorts.ascending;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
@@ -42,6 +45,7 @@ public class TripDao {
 
     private static final PojoChecker checker = PojoChecker.of(TripResponseItem.class);
 
+    private static final String TRIP_ID_FIELD = "_id";
     private static final String TRIP_DATE_TIME_FIELD = "departureDttm";
     private static final String TRIP_HARBOUR_FIELD = "harbour";
     private static final String TRIP_TYPE_FIELD = "type";
@@ -62,6 +66,7 @@ public class TripDao {
         checker.check(TRIP_DATE_TIME_FIELD);
         checker.check(TRIP_HARBOUR_FIELD);
         checker.check(TRIP_TYPE_FIELD);
+        checker.check(TRIP_ID_FIELD);
     }
 
     // TODO FIX THESE 2 METHODS
@@ -132,8 +137,12 @@ public class TripDao {
             foundItems = collection.find();
         }
 
-        Set<TripResponseItem> ret = new HashSet<>();
-        foundItems.skip(offset).limit(limit).forEach((Consumer<? super TripResponseItem>) ret::add);
+        Set<TripResponseItem> ret = new LinkedHashSet<>();
+        foundItems
+                .sort(ascending(TRIP_ID_FIELD))
+                .skip(offset)
+                .limit(limit)
+                .forEach((Consumer<? super TripResponseItem>) ret::add);
         return ret;
 
     }
