@@ -1,9 +1,16 @@
 package configuration.response;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import org.bson.types.ObjectId;
+
 import java.time.LocalDateTime;
 
 public class TripResponseItem extends ResponseItem {
 
+    // TODO replace object mapper bean with a custom one with the required config
+    @JsonSerialize(using = ToStringSerializer.class)
+    private ObjectId id;
     private String name;
     private Integer tickets;
     private String junkName;
@@ -13,6 +20,14 @@ public class TripResponseItem extends ResponseItem {
     private String description;
 
     public TripResponseItem() {
+    }
+
+    public ObjectId getId() {
+        return id;
+    }
+
+    public void setId(ObjectId id) {
+        this.id = id;
     }
 
     public String getName() {
