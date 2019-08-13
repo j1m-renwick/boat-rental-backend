@@ -31,6 +31,10 @@ import static com.mongodb.client.model.Filters.lt;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
+//import com.mongodb.reactivestreams.client.MongoClient;
+//import com.mongodb.reactivestreams.client.MongoClients;
+//import com.mongodb.reactivestreams.client.MongoCollection;
+
 public class TripDao {
 
 
@@ -49,7 +53,8 @@ public class TripDao {
 
     @PostConstruct
     private void initialise() {
-        CodecRegistry pojoCodecRegistry = fromRegistries(MongoClient.getDefaultCodecRegistry(),
+        CodecRegistry pojoCodecRegistry = fromRegistries(
+                MongoClient.getDefaultCodecRegistry(),
                 fromProviders(PojoCodecProvider.builder().automatic(true).build()));
 
         collection = mongoClient.getDatabase("junk").withCodecRegistry(pojoCodecRegistry).getCollection("trips", TripResponseItem.class);
@@ -157,5 +162,37 @@ public class TripDao {
     private Bson onDay(String fieldName, LocalDate day) {
         return inRange(fieldName, day.atStartOfDay(), day.plusDays(1L).atStartOfDay());
     }
+
+    //    public Flowable<TripResponseItem> getTrips(Integer offset, Integer limit,
+//                               LocalDate date, Harbour harbour, TripType type) {
+//
+//        List<Bson> filterList = getFilterList(date, harbour, type);
+//
+//        Flowable<TripResponseItem> foundItems;
+//
+//        if (!filterList.isEmpty()) {
+//            Bson allFilters = and(filterList);
+//            foundItems = Flowable.fromPublisher(collection.find(allFilters));
+//
+//        } else {
+//            foundItems = Flowable.fromPublisher(collection.find());
+//        }
+//
+//        return foundItems.skip(offset).limit(limit);
+//
+//    }
+
+    //    public Flowable<Long> getTotalCount(LocalDate date, Harbour harbour, TripType type) {
+//
+//        List<Bson> filterList = getFilterList(date, harbour, type);
+//
+//        if (!filterList.isEmpty()) {
+//            Bson allFilters = and(filterList);
+//            return Flowable.fromPublisher(collection.countDocuments(allFilters));
+//        } else {
+//            return Flowable.fromPublisher(collection.countDocuments());
+//        }
+//
+//    }
 
 }

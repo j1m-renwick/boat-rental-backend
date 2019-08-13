@@ -1,4 +1,5 @@
-package configuration.controllers;
+package configuration.services;
+
 
 import configuration.daos.TripDao;
 import configuration.errors.exceptions.ResourceNotFoundException;
@@ -8,20 +9,12 @@ import configuration.response.Harbour;
 import configuration.response.ResponseWrapper;
 import configuration.response.TripResponseItem;
 import configuration.response.TripType;
-import configuration.services.LinkService;
-import io.micronaut.core.convert.format.Format;
-import io.micronaut.http.annotation.Controller;
-import io.micronaut.http.annotation.Get;
-import io.micronaut.http.annotation.Post;
-import io.micronaut.http.annotation.QueryValue;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.time.LocalDate;
 import java.util.Set;
 
-@Controller("/trips")
-public class Trip {
+public class TripService {
 
     @Inject
     private TripDao tripDao;
@@ -29,24 +22,20 @@ public class Trip {
     @Inject
     private LinkService linkService;
 
-    @Post
     public CreatedResponse addTrip(TripCreateRequest requestBody) {
         return new CreatedResponse(tripDao.addTrip(requestBody));
 
     }
 
-    @Get("/{tripId}")
     public TripResponseItem getTrip(String tripId) {
         return tripDao.getTrip(tripId);
     }
 
-    // Optional LocalDate should be in 1.1.5 milestone release (https://github.com/micronaut-projects/micronaut-core/issues/1916)
-    @Get
-    public ResponseWrapper<TripResponseItem> getTrips(@QueryValue(defaultValue = "0") Integer offset,
-                                                      @QueryValue(defaultValue = "1") Integer limit,
-                                                      @QueryValue @Nullable @Format("yyyy-MM-dd") LocalDate date,
-                                                      @QueryValue @Nullable Harbour harbour,
-                                                      @QueryValue @Nullable TripType type) {
+    public ResponseWrapper<TripResponseItem> getTrips(Integer offset,
+                                                      Integer limit,
+                                                      LocalDate date,
+                                                      Harbour harbour,
+                                                      TripType type) {
 
         ResponseWrapper<TripResponseItem> response = new ResponseWrapper<>();
         Set<TripResponseItem> tripResults = tripDao.getTrips(offset, limit, date, harbour, type);
@@ -61,5 +50,7 @@ public class Trip {
         }
         response.setResources(tripResults);
         return response;
+
     }
+
 }
