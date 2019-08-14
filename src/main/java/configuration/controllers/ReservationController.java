@@ -21,14 +21,19 @@ import java.time.LocalDate;
 public class ReservationController {
 
 
-/*  generates token and calls POST/PUT /trip/<trip_id>/reserve?quantity=x
+/*  generates token and calls POST /reservations/reserve?quantity=XXX&tripId=<trip_id>
 -> maintains cache of ticket number per trip and active reservation ids with quantities attached
 -> if quantity requested available, returns reservation id and expiry dttm (UTC)
-->
+
+
+
+-> POST /reservations/reserve?quantity=XXX&tripId=<trip_id>
+-> GET /reservations/<reservation_id>
+-> GET /trips/<trip_id>/reservations
  */
 
 /*
-    generates token and calls POST /reservation/<reservation_id>/purchase
+    generates token and calls POST /reservations/<reservation_id>/purchase
 -> if reservation id exists in cache and is before expiry dttm, call to DB to obtain required quantity of free tickets and update them with purchase info (or relational table for purchasing user details)
 -> returns ticket ids and/or link to ticket resources (or error and clear cache entry if quantity not available in DB)
  */

@@ -3,6 +3,7 @@ package configuration.controllers;
 import configuration.request.TripCreateRequest;
 import configuration.response.CreatedResponse;
 import configuration.response.Harbour;
+import configuration.response.ReservationResponseItem;
 import configuration.response.ResponseWrapper;
 import configuration.response.TripResponseItem;
 import configuration.response.TripType;
@@ -45,4 +46,6 @@ public class TripController {
         return tripService.getTrips(offset, limit, date, harbour, type);
 
     }
+
+
 }
