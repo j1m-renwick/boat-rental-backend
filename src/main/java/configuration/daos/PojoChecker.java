@@ -22,8 +22,9 @@ public class PojoChecker {
         try {
             clazz.getDeclaredField(fieldName);
         } catch (NoSuchFieldException e) {
-            logger.info(fieldName + " was not found in class: " + clazz.getName());
-            throw new RuntimeException();
+            String error = fieldName + " was not found in class: " + clazz.getName();
+            logger.info(error);
+            throw new RuntimeException(error);
         }
     }
 }

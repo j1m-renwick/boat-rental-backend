@@ -1,13 +1,10 @@
 package configuration.controllers;
 
-import configuration.request.TripCreateRequest;
-import configuration.response.CreatedResponse;
+import configuration.daos.RedisDao;
 import configuration.response.Harbour;
-import configuration.response.ResponseWrapper;
+import configuration.response.ReservationResponseItem;
 import configuration.response.TripResponseItem;
-import configuration.response.TripType;
 import configuration.services.TripService;
-import io.micronaut.core.convert.format.Format;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
@@ -15,9 +12,8 @@ import io.micronaut.http.annotation.QueryValue;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.time.LocalDate;
 
-@Controller("/reservation")
+@Controller("/reservations")
 public class ReservationController {
 
 
@@ -25,11 +21,9 @@ public class ReservationController {
 -> maintains cache of ticket number per trip and active reservation ids with quantities attached
 -> if quantity requested available, returns reservation id and expiry dttm (UTC)
 
-
-
--> POST /reservations/reserve?quantity=XXX&tripId=<trip_id>
--> GET /reservations/<reservation_id>
--> GET /trips/<trip_id>/reservations
+-> POST /reservations/reserve?quantity=XXX&tripId=<trip_id>&userId=<userId>
+-> GET /reservations/<reservation_id>?userId=<userId>
+-> GET /trips/<trip_id>/reservations?userId=<userId> ?????
  */
 
 /*
@@ -41,26 +35,38 @@ public class ReservationController {
     @Inject
     private TripService tripService;
 
-    @Post
-    public CreatedResponse addTrip(TripCreateRequest requestBody) {
-        return tripService.addTrip(requestBody);
+    @Inject
+    private RedisDao<TripResponseItem> redisDao;
 
+
+    @Post("/reserve")
+    public ReservationResponseItem reserveTickets(@QueryValue String tripId,
+                                                  @QueryValue String userId,
+                                                  @Nullable @QueryValue("1") Integer quantity) {
+
+        TripResponseItem item = new TripResponseItem();
+        item.setHarbour(Harbour.VICTORIA_HARBOUR);
+
+        System.out.println(redisDao.put("foo", item));
+
+        System.out.println(redisDao.get("foo", TripResponseItem.class));
+
+//         check that entry for userId doesn't already exist - if so, fail
+
+        if (redisDao.get(userId) != null) {
+//             check that the number of reserved tickets + quantity isn't above the total on sale
+        } else {
+            System.out.println("key isn't null");
+            // fail
+        }
+
+
+        return null;
     }
 
-    @Get("/{tripId}")
-    public TripResponseItem getTrip(String tripId) {
-        return tripService.getTrip(tripId);
+    @Get("/{reservationId}")
+    public ReservationResponseItem getTicket(String reservationId, @QueryValue String userId) {
+        return null;
     }
 
-    // Optional LocalDate should be in 1.1.5 milestone release (https://github.com/micronaut-projects/micronaut-core/issues/1916)
-    @Get
-    public ResponseWrapper<TripResponseItem> getTrips(@QueryValue(defaultValue = "0") Integer offset,
-                                                      @QueryValue(defaultValue = "1") Integer limit,
-                                                      @QueryValue @Nullable @Format("yyyy-MM-dd") LocalDate date,
-                                                      @QueryValue @Nullable Harbour harbour,
-                                                      @QueryValue @Nullable TripType type) {
-
-        return tripService.getTrips(offset, limit, date, harbour, type);
-
-    }
 }

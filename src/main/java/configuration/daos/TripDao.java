@@ -45,7 +45,7 @@ public class TripDao {
 
     private static final PojoChecker checker = PojoChecker.of(TripResponseItem.class);
 
-    private static final String TRIP_ID_FIELD = "_id";
+    private static final String TRIP_ID_FIELD = "id";
     private static final String TRIP_DATE_TIME_FIELD = "departureDttm";
     private static final String TRIP_HARBOUR_FIELD = "harbour";
     private static final String TRIP_TYPE_FIELD = "type";
