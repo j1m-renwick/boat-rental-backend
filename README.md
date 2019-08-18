@@ -3,7 +3,7 @@
 Dummy microservice written using the Micronaut framework that supplies Junk-related information and takes reservation requests.
 
 
-###Setup
+### Setup
 
 - Install Docker
 
