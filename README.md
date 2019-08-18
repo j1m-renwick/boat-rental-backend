@@ -21,3 +21,5 @@ and `docker run -p 27017:27017 mongo` in the command line _(you can test if thes
 - go to the Application class and run it
 
 - open a browser and navigate to `http://localhost:8080/health` - you should see `"status":"UP!"`
+
+- next, try `http://localhost:8080/trips?limit=2&harbour=VICTORIA_HARBOUR&date=2019-08-25&type=BOOZE_CRUISE` - you should get back a response object titled Jim's Summer Getaway
