@@ -10,7 +10,7 @@ plugins {
 
 
 version "0.1"
-group "configuration.service"
+group "configuration"
 
 repositories {
     mavenCentral()
@@ -49,7 +49,7 @@ dependencies {
 
 test.classpath += configurations.developmentOnly
 
-mainClassName = "configuration.service.Application"
+mainClassName = "configuration.Application"
 
 // use JUnit 5 platform
 test {

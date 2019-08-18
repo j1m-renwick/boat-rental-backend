@@ -1,0 +1,9 @@
+{
+    "name" : "Bob's Away Day '19",
+    "tickets" : 321,
+    "junkName" : "The Olivia Dream",
+    "departureDttm" : ISODate("2019-08-25T13:00:00.000Z"),
+    "harbour" : "VICTORIA_HARBOUR",
+    "type" : "CASINO_ROYALE",
+    "description" : "Getting away from the family for a while :)"
+}

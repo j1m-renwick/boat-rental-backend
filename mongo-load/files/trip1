@@ -1,0 +1,9 @@
+{
+    "name" : "Jim's Summer Getaway",
+    "tickets" : 12345,
+    "junkName" : "Mary Sue II",
+    "departureDttm" : ISODate("2019-08-25T11:00:00.000Z"),
+    "harbour" : "VICTORIA_HARBOUR",
+    "type" : "BOOZE_CRUISE",
+    "description" : "Gonna get loaded and tear it up boiiiii!"
+}

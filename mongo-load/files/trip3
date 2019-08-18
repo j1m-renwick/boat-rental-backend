@@ -1,0 +1,9 @@
+{
+    "name" : "Another day in paradise",
+    "tickets" : 3121,
+    "junkName" : "The Rowboat",
+    "departureDttm" : ISODate("2019-09-01T10:00:00.000Z"),
+    "harbour" : "PORT_SHELTER",
+    "type" : "BOOZE_CRUISE",
+    "description" : "Chasing the sunburn..."
+}

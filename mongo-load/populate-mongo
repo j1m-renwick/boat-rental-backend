@@ -1,0 +1,38 @@
+#! /bin/bash
+echo "Creating Mongo JS file.."
+
+# clear the JS file
+> ./mongo-data.js
+
+# create the new database
+echo "db = db.getSiblingDB('junk')" >> ./mongo-data.js
+
+# drop and recreate the required collections
+echo "db.trips.drop()" >> ./mongo-data.js
+echo "db.createCollection(\"trips\")" >> ./mongo-data.js
+
+# write out the save information for the JSONs
+echo -e "\n***FILES***"
+for file in ./files/*; do
+  echo `basename "$file"`
+  
+  # this line is to make sure a new line is appended to the end of each file, 
+  # otherwise the read command won't recognise the penultimate one 
+  sed -i '' '$a\' "$file"
+  
+  textToWrite="db.trips.save("
+  while IFS= read -r line
+  do
+    textToWrite+=${line}
+  done < "$file"
+  textToWrite+=")"
+  echo $textToWrite >> ./mongo-data.js
+  echo "" >> ./mongo-data.js
+done
+
+echo "*Parsing done!*"
+
+echo -e "\nPopulating MongoDB data..."
+# add the data
+mongo mongo-data.js
+echo "...done!"

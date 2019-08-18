@@ -1,0 +1,9 @@
+{
+    "name" : "Nick's Pirate Cruise lol",
+    "tickets" : 990,
+    "junkName" : "The Salty Shanty",
+    "departureDttm" : ISODate("2019-09-01T13:00:00.000Z"),
+    "harbour" : "TAI_TAM_HARBOUR",
+    "type" : "CASINO_ROYALE",
+    "description" : "Yarrr.  That is all. "
+}

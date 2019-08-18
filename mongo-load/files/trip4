@@ -1,0 +1,9 @@
+{
+    "name" : "Cruising the day away",
+    "tickets" : 2,
+    "junkName" : "Troubled Waters III",
+    "departureDttm" : ISODate("2019-08-25T09:00:00.000Z"),
+    "harbour" : "PORT_SHELTER",
+    "type" : "MAX_RELAX",
+    "description" : "Fish Ahoy!!!"
+}
