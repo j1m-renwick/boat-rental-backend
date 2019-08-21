@@ -19,9 +19,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -157,6 +159,19 @@ public class TripDao {
         } else {
             return collection.countDocuments();
         }
+
+    }
+
+    public Map<String, Integer> getAllQuantities() {
+
+        Map<String, Integer> returnMap = new HashMap<>();
+
+        collection
+                .find()
+                .forEach((Consumer<? super TripResponseItem>) item ->
+                        returnMap.put(item.getId().toString(), item.getTickets()));
+
+        return returnMap;
 
     }
 

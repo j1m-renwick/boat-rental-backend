@@ -4,20 +4,28 @@ import java.time.LocalDateTime;
 
 public class ReservationResponseItem {
 
-    // TODO add user information;
+    public String userId;
+    public String tripId;
     public Integer ticketQuantity;
-    public String id;
     public LocalDateTime expiryDttm;
 
     public ReservationResponseItem() {
     }
 
-    public String getId() {
-        return id;
+    public String getUserId() {
+        return userId;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String getTripId() {
+        return tripId;
+    }
+
+    public void setTripId(String tripId) {
+        this.tripId = tripId;
     }
 
     public LocalDateTime getExpiryDttm() {

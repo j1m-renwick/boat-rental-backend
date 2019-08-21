@@ -5,6 +5,7 @@ import io.micronaut.http.context.ServerRequestContext;
 import io.micronaut.http.uri.UriBuilder;
 
 import javax.inject.Singleton;
+import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -38,12 +39,11 @@ public class LinkService {
     }
 
     /**
-     *
      * @param offset the offset parameter (this might be a default that overrides the user-supplied parameter)
-     * @param limit the limit parameter (this might be a default that overrides the user-supplied parameter)
+     * @param limit  the limit parameter (this might be a default that overrides the user-supplied parameter)
      * @return the string URL of the previous link based on the query parameters given in the request.
      * If no context is found for the request, returns null.
-     *
+     * <p>
      * Any and all parameters in the request will be echoed in the response, regardless of their utility in the request.
      */
     public String getPreviousLink(Integer offset, Integer limit) {
@@ -71,12 +71,11 @@ public class LinkService {
     }
 
     /**
-     *
      * @param offset the offset parameter (this might be a default that overrides the user-supplied parameter)
-     * @param limit the limit parameter (this might be a default that overrides the user-supplied parameter)
+     * @param limit  the limit parameter (this might be a default that overrides the user-supplied parameter)
      * @return the string URL of the next link based on the query parameters given in the request.
      * If no context is found for the request, returns null.
-     *
+     * <p>
      * Any and all parameters in the request will be echoed in the response, regardless of their utility in the request.
      */
     public String getNextLink(Integer offset, Integer limit) {
@@ -101,6 +100,15 @@ public class LinkService {
         } else {
             return null;
         }
+    }
+
+    public URI getSelfUri(HttpRequest request, String resourceId) {
+
+        String path = request.getPath();
+
+        path = path.replaceFirst("(.*[/])(.*)", "$1" + resourceId);
+        return getBasicUri(request).replacePath(path).build();
+
     }
 
 }

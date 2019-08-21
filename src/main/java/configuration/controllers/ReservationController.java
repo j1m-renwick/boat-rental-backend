@@ -1,14 +1,13 @@
 package configuration.controllers;
 
-import configuration.daos.RedisDao;
-import configuration.response.Harbour;
 import configuration.response.ReservationResponseItem;
-import configuration.response.TripResponseItem;
-import configuration.services.TripService;
+import configuration.services.ReservationService;
+import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.http.annotation.Status;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -33,40 +32,23 @@ public class ReservationController {
  */
 
     @Inject
-    private TripService tripService;
+    private ReservationService reservationService;
 
-    @Inject
-    private RedisDao<TripResponseItem> redisDao;
 
 
     @Post("/reserve")
+    @Status(HttpStatus.CREATED)
     public ReservationResponseItem reserveTickets(@QueryValue String tripId,
                                                   @QueryValue String userId,
-                                                  @Nullable @QueryValue("1") Integer quantity) {
+                                                  @Nullable @QueryValue(defaultValue = "1") Integer quantity) {
 
-        TripResponseItem item = new TripResponseItem();
-        item.setHarbour(Harbour.VICTORIA_HARBOUR);
+        return reservationService.reserve(tripId, userId, quantity);
 
-        System.out.println(redisDao.put("foo", item));
-
-        System.out.println(redisDao.get("foo", TripResponseItem.class));
-
-//         check that entry for userId doesn't already exist - if so, fail
-
-        if (redisDao.get(userId) != null) {
-//             check that the number of reserved tickets + quantity isn't above the total on sale
-        } else {
-            System.out.println("key isn't null");
-            // fail
-        }
-
-
-        return null;
     }
 
-    @Get("/{reservationId}")
-    public ReservationResponseItem getTicket(String reservationId, @QueryValue String userId) {
-        return null;
+    @Get("/{userId}")
+    public String getTicket(String userId) {
+        return "hello!";
     }
 
 }
