@@ -1,8 +1,10 @@
 package configuration.controllers;
 
+import configuration.request.ReservationCreateRequest;
 import configuration.response.ReservationResponseItem;
 import configuration.services.ReservationService;
 import io.micronaut.http.HttpStatus;
+import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
@@ -38,11 +40,9 @@ public class ReservationController {
 
     @Post("/reserve")
     @Status(HttpStatus.CREATED)
-    public ReservationResponseItem reserveTickets(@QueryValue String tripId,
-                                                  @QueryValue String userId,
-                                                  @Nullable @QueryValue(defaultValue = "1") Integer quantity) {
+    public ReservationResponseItem reserveTickets(@Body ReservationCreateRequest request) {
 
-        return reservationService.reserve(tripId, userId, quantity);
+        return reservationService.reserve(request.getTripId(), request.getUserId(), request.getQuantity());
 
     }
 

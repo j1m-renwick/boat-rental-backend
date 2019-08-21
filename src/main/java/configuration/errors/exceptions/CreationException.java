@@ -2,7 +2,8 @@ package configuration.errors.exceptions;
 
 public enum CreationException {
 
-    INVALID_QUANTITY("the request quantity is greater than available");
+    QUANTITY_TOO_LARGE("the request quantity is greater than available"),
+    BODY_PARAMS_NULL("some mandatory fields were not supplied in the request body");
 
     String message;
 

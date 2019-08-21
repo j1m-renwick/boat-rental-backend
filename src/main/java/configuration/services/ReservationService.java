@@ -2,6 +2,7 @@ package configuration.services;
 
 
 import configuration.daos.ReservationDao;
+import configuration.errors.exceptions.CreationException;
 import configuration.errors.exceptions.ResourceCreationException;
 import configuration.response.ReservationResponseItem;
 
@@ -15,7 +16,9 @@ public class ReservationService {
 
     public ReservationResponseItem reserve(String tripId, String userId, Integer quantity) {
 
-        reservationDao.clearExpiredReservations();
+        if (tripId == null || userId == null || quantity == null) {
+            throw new ResourceCreationException(CreationException.BODY_PARAMS_NULL);
+        }
 
         Optional<ReservationResponseItem> reservation = reservationDao.reserve(tripId, userId, quantity);
 

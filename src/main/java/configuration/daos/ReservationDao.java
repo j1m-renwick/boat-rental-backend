@@ -7,6 +7,7 @@ import io.lettuce.core.Range;
 import io.lettuce.core.TransactionResult;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
+import io.micronaut.scheduling.annotation.Scheduled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,29 +50,36 @@ public class ReservationDao {
         }
     }
 
-    // TODO make this a cron job
+    // whenever items are found less than the score, expire them as part of the get procedure
+
+    /**
+     * clears any expired reservations from the redis reservation set.
+     */
+    @Scheduled(fixedDelay = "1m")
     public void clearExpiredReservations() {
-        // whenever items are found less than the score, expire them as part of the get procedure
+        log.info("Clearing Expired Reservations");
+
         Range<Long> range = Range.unbounded();
         range.lt(System.currentTimeMillis());
 
         List<String> itemsToRemove = commands.zrangebyscore(RESERVATION_SET, range);
 
-        System.out.println(String.format("deleting %d expired entries", itemsToRemove.size()));
-
         for (String item: itemsToRemove) {
-            // TODO maybe limit this to a certain number of retries
+            // TODO limit this to a certain number of retries
             do {
+                System.out.println("looping for item:" +item);
                 commands.watch(item);
-                String itemTripId = commands.hget(item, "tripId");
-                String itemQty = commands.hget(item, "quantity");
+                String itemTripId = commands.hget(item, TRIP_ID);
+                String itemQty = commands.hget(item, QUANTITY);
                 commands.multi();
                 commands.incrby(itemTripId, Long.parseLong(itemQty));
-                commands.del(item);
                 commands.zrem(RESERVATION_SET, item);
-            } while (commands.exec() == null);
+                commands.del(item);
+            } while (commands.exec().isEmpty());
+
         }
 
+        log.info(String.format("CLEARING COMPLETE - %s reservations expired.", itemsToRemove.size()));
     }
 
 
@@ -128,6 +136,9 @@ public class ReservationDao {
 
     public Optional<ReservationResponseItem> reserve(String tripId, String userId, Integer quantity) {
 
+        // TODO make this a user specific out-of-date clearance
+        clearExpiredReservations();
+
         log.info("USER ID:" + userId);
         log.info("TRIP ID:" + tripId);
 
@@ -149,7 +160,7 @@ public class ReservationDao {
                 return getReservation(userId);
             }
         } else {
-            throw new ResourceCreationException(CreationException.INVALID_QUANTITY);
+            throw new ResourceCreationException(CreationException.QUANTITY_TOO_LARGE);
         }
     }
 }
