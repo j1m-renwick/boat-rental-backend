@@ -43,7 +43,7 @@ public class ReservationDao {
     @PostConstruct
     protected void initialise() {
         commands = connection.sync();
-
+        commands.flushdb();
         // TODO only populate if not in cache already - other instances might be up
         for (Map.Entry<String, Integer> entry: tripDao.getAllQuantities().entrySet()) {
             commands.set(entry.getKey(), entry.getValue().toString());
@@ -98,12 +98,36 @@ public class ReservationDao {
         return Optional.of(reservationResponseItem);
     }
 
-    private Optional<ReservationResponseItem> saveReservation(String userId, String tripId, Integer quantityDifference, Integer reserveQuantity) {
-        commands.multi();
-        commands.decrby(tripId, quantityDifference);
+    /**
+     * Clears an existing reservation and returns the reserved quantity to the appropriate trip ticket pool
+     *
+     * @param userId the userId to clear the reservation for
+     * @return true if the reservation was cleared successfully - else returns false
+     */
+    private boolean clearReservation(String userId) {
+        Map<String, String> reservation = commands.hgetall(userId);
 
-        // overwrite any existing reservation details
+        log.info("existing entry overwritten:" + !reservation.isEmpty());
+        if (reservation.isEmpty()) {
+            return true;
+        }
+
+        commands.multi();
+        commands.incrby(reservation.get(TRIP_ID), Long.parseLong(reservation.get(QUANTITY)));
         commands.del(userId);
+        return !commands.exec().isEmpty();
+
+    }
+
+    private Optional<ReservationResponseItem> saveReservation(String userId, String tripId, Integer reserveQuantity) {
+
+        if (!clearReservation(userId)) {
+            return Optional.empty();
+        }
+
+        commands.multi();
+        commands.decrby(tripId, reserveQuantity);
+
         // create hash entry in redis with a key of the userId
         Map<String, String> map = new HashMap<>();
         map.put(TRIP_ID, tripId);
@@ -118,11 +142,10 @@ public class ReservationDao {
 
         TransactionResult result = commands.exec();
 
-        if (result == null) {
+        if (result.isEmpty()) {
             return Optional.empty();
         }
 
-        log.info("existing entry overwritten:" + ((Long) result.get(1) >= 1L));
         log.info("post-reserve quantity: " + result.get(0));
         log.info("created reservation: " + map.toString());
 
@@ -148,19 +171,25 @@ public class ReservationDao {
         log.info("pre-reserve quantity: " + totalQuantity);
 
         String existingQuantity = commands.hget(userId, QUANTITY);
+        String existingTripId = commands.hget(userId, TRIP_ID);
+        boolean differentTripId = existingTripId == null || !existingTripId.equals(tripId);
         int existingQty = existingQuantity != null ? Integer.parseInt(existingQuantity) : 0;
         int qtyDiff = quantity - existingQty;
 
         // only create a new entry if there are enough tickets and there is a different quantity number being reserved from the existing entry
-        if (qtyDiff <= totalQuantity) {
-            if (qtyDiff != 0) {
-                return saveReservation(userId, tripId, qtyDiff, quantity);
-            } else {
-                log.info("returning existing entry");
-                return getReservation(userId);
-            }
+        if (differentTripId) {
+            return saveReservation(userId, tripId, quantity);
         } else {
-            throw new ResourceCreationException(CreationException.QUANTITY_TOO_LARGE);
+            if (qtyDiff <= totalQuantity) {
+                if (qtyDiff != 0) {
+                    return saveReservation(userId, tripId, quantity);
+                } else {
+                    log.info("returning existing entry");
+                    return getReservation(userId);
+                }
+            } else {
+                throw new ResourceCreationException(CreationException.QUANTITY_TOO_LARGE);
+            }
         }
     }
 }
