@@ -43,14 +43,12 @@ public class ReservationDao {
     @PostConstruct
     protected void initialise() {
         commands = connection.sync();
-        commands.flushdb();
         // TODO only populate if not in cache already - other instances might be up
+        commands.flushdb();
         for (Map.Entry<String, Integer> entry: tripDao.getAllQuantities().entrySet()) {
             commands.set(entry.getKey(), entry.getValue().toString());
         }
     }
-
-    // whenever items are found less than the score, expire them as part of the get procedure
 
     /**
      * clears any expired reservations from the redis reservation set.
@@ -104,6 +102,8 @@ public class ReservationDao {
      * @param userId the userId to clear the reservation for
      * @return true if the reservation was cleared successfully - else returns false
      */
+    // TODO wrap all multi commands in a retry wrapper
+    // TODO instead of empty optionals, throw exceptions with detail and log them
     private boolean clearReservation(String userId) {
         Map<String, String> reservation = commands.hgetall(userId);
 
@@ -112,10 +112,18 @@ public class ReservationDao {
             return true;
         }
 
-        commands.multi();
-        commands.incrby(reservation.get(TRIP_ID), Long.parseLong(reservation.get(QUANTITY)));
-        commands.del(userId);
-        return !commands.exec().isEmpty();
+        // retry 10 times before returning false
+        for (int i = 0; i < 10; i++) {
+
+            commands.multi();
+            commands.incrby(reservation.get(TRIP_ID), Long.parseLong(reservation.get(QUANTITY)));
+            commands.del(userId);
+            if (!commands.exec().isEmpty()) {
+                return true;
+            }
+        }
+
+        return false;
 
     }
 
@@ -125,22 +133,31 @@ public class ReservationDao {
             return Optional.empty();
         }
 
-        commands.multi();
-        commands.decrby(tripId, reserveQuantity);
-
         // create hash entry in redis with a key of the userId
         Map<String, String> map = new HashMap<>();
         map.put(TRIP_ID, tripId);
         map.put(QUANTITY, reserveQuantity.toString());
 
-        commands.hmset(userId, map);
-
         long expiryTime = System.currentTimeMillis() + EXPIRY_TIME_MS;
 
-        // add the userId to the sorted set
-        commands.zadd(RESERVATION_SET, expiryTime, userId);
+        TransactionResult result = null;
 
-        TransactionResult result = commands.exec();
+        for (int i = 0; i < 10; i++) {
+            commands.multi();
+            commands.decrby(tripId, reserveQuantity);
+
+            // create hash entry in redis with a key of the userId
+            commands.hmset(userId, map);
+
+            // add the userId to the sorted set
+            commands.zadd(RESERVATION_SET, expiryTime, userId);
+
+            result = commands.exec();
+            if (!result.isEmpty()) {
+                break;
+            }
+
+        }
 
         if (result.isEmpty()) {
             return Optional.empty();
