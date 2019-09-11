@@ -17,12 +17,10 @@ import javax.inject.Singleton;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 @Singleton
 public class ReservationDao {
@@ -59,35 +57,29 @@ public class ReservationDao {
      */
     @Scheduled(fixedDelay = "1m")
     public void clearExpiredReservations() {
-        log.info("Clearing Expired Reservations");
+        log.info("**CLEARING EXPIRED RESERVATIONS**");
 
         Range<Long> range = Range.unbounded();
         range.lt(System.currentTimeMillis());
 
         List<String> itemsToRemove = commands.zrangebyscore(RESERVATION_SET, range);
 
-        ArrayList<Supplier> commandList = new ArrayList<>();
-
         for (String item : itemsToRemove) {
 
-            log.info("hi: " + item);
-
-            commandList.clear();
-
-            commandList.add(() -> commands.watch(item));
-            commandList.add(() -> commands.multi());
-            commandList.add(() -> {
+            Runnable runnable = (() -> {
+                commands.watch(item);
                 String itemTripId = commands.hget(item, TRIP_ID);
                 String itemQty = commands.hget(item, QUANTITY);
-                return commands.incrby(itemTripId, Long.parseLong(itemQty));
+                commands.multi();
+                commands.incrby(itemTripId, Long.parseLong(itemQty));
+                commands.zrem(RESERVATION_SET, item);
+                commands.del(item);
             });
-            commandList.add(() -> commands.zrem(RESERVATION_SET, item));
-            commandList.add(() -> commands.del(item));
 
-            log.info(String.format("clearance of expired reservation %s - %s", item, RedisUtility.execWithRetries(commands, commandList) != null ? "SUCCESS!" : "FAILED!"));
+            log.info(String.format("clearance of expired reservation %s - %s", item, RedisUtility.execWithRetries(commands, runnable) != null ? "SUCCESS!" : "FAILED!"));
         }
 
-        log.info("EXPIRED CLEARING COMPLETE");
+        log.info("**EXPIRED CLEARING COMPLETE**");
     }
 
 
@@ -121,12 +113,13 @@ public class ReservationDao {
             return true;
         }
 
-        ArrayList<Supplier> commandList = new ArrayList<>();
+        Runnable runnable = (() -> {
+            commands.multi();
+            commands.incrby(reservation.get(TRIP_ID), Long.parseLong(reservation.get(QUANTITY)));
+            commands.del(userId);
+        });
 
-        commandList.add(() -> commands.multi());
-        commandList.add(() -> commands.incrby(reservation.get(TRIP_ID), Long.parseLong(reservation.get(QUANTITY))));
-        commandList.add(() -> commands.del(userId));
-        return RedisUtility.execWithRetries(commands, commandList) != null;
+        return RedisUtility.execWithRetries(commands, runnable) != null;
 
     }
 
@@ -143,16 +136,16 @@ public class ReservationDao {
 
         long expiryTime = System.currentTimeMillis() + EXPIRY_TIME_MS;
 
-        ArrayList<Supplier> commandList = new ArrayList<>();
+        Runnable runnable = (() -> {
+            commands.multi();
+            commands.decrby(tripId, reserveQuantity);
+            // create hash entry in redis with a key of the userId
+            commands.hmset(userId, map);
+            // add the userId to the sorted set
+            commands.zadd(RESERVATION_SET, expiryTime, userId);
+        });
 
-        commandList.add(() -> commands.multi());
-        commandList.add(() -> commands.decrby(tripId, reserveQuantity));
-        // create hash entry in redis with a key of the userId
-        commandList.add(() -> commands.hmset(userId, map));
-        // add the userId to the sorted set
-        commandList.add(() -> commands.zadd(RESERVATION_SET, expiryTime, userId));
-
-        TransactionResult result = RedisUtility.execWithRetries(commands, commandList);
+        TransactionResult result = RedisUtility.execWithRetries(commands, runnable);
 
         if (result == null) {
             return Optional.empty();
