@@ -25,25 +25,25 @@ import java.util.Optional;
 @Singleton
 public class ReservationDao {
 
-    Logger log = LoggerFactory.getLogger(ReservationDao.class);
+    private Logger log = LoggerFactory.getLogger(ReservationDao.class);
 
     @Inject
     private StatefulRedisConnection<String, String> connection;
 
     @Inject
-    TripDao tripDao;
+    private TripDao tripDao;
 
     private RedisCommands<String, String> commands;
 
-    final static String RESERVATION_SET = "reservationSet";
-    final static String TRIP_ID = "tripId";
-    final static String QUANTITY = "quantity";
+    private final static String RESERVATION_SET = "reservationSet";
+    private final static String TRIP_ID = "tripId";
+    private final static String QUANTITY = "quantity";
 
     // one minute reservation expiry
-    final static long EXPIRY_TIME_MS = 60_000;
+    private final static long EXPIRY_TIME_MS = 60_000;
 
     @PostConstruct
-    protected void initialise() {
+    private void initialise() {
         commands = connection.sync();
         // TODO only populate if not in cache already - other instances might be up
         commands.flushdb();
@@ -83,7 +83,7 @@ public class ReservationDao {
     }
 
 
-    public Optional<ReservationResponseItem> getReservation(String userId) {
+    private Optional<ReservationResponseItem> getReservation(String userId) {
         Map<String, String> toReturn = commands.hgetall(userId);
 
         if (toReturn.isEmpty()) {
