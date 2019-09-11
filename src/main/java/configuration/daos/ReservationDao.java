@@ -47,7 +47,7 @@ public class ReservationDao {
         commands = connection.sync();
         // TODO only populate if not in cache already - other instances might be up
         commands.flushdb();
-        for (Map.Entry<String, Integer> entry: tripDao.getAllQuantities().entrySet()) {
+        for (Map.Entry<String, Integer> entry : tripDao.getAllQuantities().entrySet()) {
             commands.set(entry.getKey(), entry.getValue().toString());
         }
     }
@@ -57,17 +57,16 @@ public class ReservationDao {
      */
     @Scheduled(fixedDelay = "1m")
     public void clearExpiredReservations() {
-        log.info("Clearing Expired Reservations");
+        log.info("**CLEARING EXPIRED RESERVATIONS**");
 
         Range<Long> range = Range.unbounded();
         range.lt(System.currentTimeMillis());
 
         List<String> itemsToRemove = commands.zrangebyscore(RESERVATION_SET, range);
 
-        for (String item: itemsToRemove) {
-            // TODO limit this to a certain number of retries
-            do {
-                System.out.println("looping for item:" +item);
+        for (String item : itemsToRemove) {
+
+            Runnable runnable = (() -> {
                 commands.watch(item);
                 String itemTripId = commands.hget(item, TRIP_ID);
                 String itemQty = commands.hget(item, QUANTITY);
@@ -75,11 +74,12 @@ public class ReservationDao {
                 commands.incrby(itemTripId, Long.parseLong(itemQty));
                 commands.zrem(RESERVATION_SET, item);
                 commands.del(item);
-            } while (commands.exec().isEmpty());
+            });
 
+            log.info(String.format("clearance of expired reservation %s - %s", item, RedisUtility.execWithRetries(commands, runnable) != null ? "SUCCESS!" : "FAILED!"));
         }
 
-        log.info(String.format("CLEARING COMPLETE - %s reservations expired.", itemsToRemove.size()));
+        log.info("**EXPIRED CLEARING COMPLETE**");
     }
 
 
@@ -104,7 +104,6 @@ public class ReservationDao {
      * @param userId the userId to clear the reservation for
      * @return true if the reservation was cleared successfully - else returns false
      */
-    // TODO wrap all multi commands in a retry wrapper
     // TODO instead of empty optionals, throw exceptions with detail and log them
     private boolean clearReservation(String userId) {
         Map<String, String> reservation = commands.hgetall(userId);
@@ -114,18 +113,13 @@ public class ReservationDao {
             return true;
         }
 
-        // retry 10 times before returning false
-        for (int i = 0; i < 10; i++) {
-
+        Runnable runnable = (() -> {
             commands.multi();
             commands.incrby(reservation.get(TRIP_ID), Long.parseLong(reservation.get(QUANTITY)));
             commands.del(userId);
-            if (!commands.exec().isEmpty()) {
-                return true;
-            }
-        }
+        });
 
-        return false;
+        return RedisUtility.execWithRetries(commands, runnable) != null;
 
     }
 
@@ -142,26 +136,18 @@ public class ReservationDao {
 
         long expiryTime = System.currentTimeMillis() + EXPIRY_TIME_MS;
 
-        TransactionResult result = null;
-
-        for (int i = 0; i < 10; i++) {
+        Runnable runnable = (() -> {
             commands.multi();
             commands.decrby(tripId, reserveQuantity);
-
             // create hash entry in redis with a key of the userId
             commands.hmset(userId, map);
-
             // add the userId to the sorted set
             commands.zadd(RESERVATION_SET, expiryTime, userId);
+        });
 
-            result = commands.exec();
-            if (!result.isEmpty()) {
-                break;
-            }
+        TransactionResult result = RedisUtility.execWithRetries(commands, runnable);
 
-        }
-
-        if (result.isEmpty()) {
+        if (result == null) {
             return Optional.empty();
         }
 
