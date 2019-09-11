@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+@Singleton
 public class ReservationDao {
 
     Logger log = LoggerFactory.getLogger(ReservationDao.class);
@@ -62,24 +64,28 @@ public class ReservationDao {
         Range<Long> range = Range.unbounded();
         range.lt(System.currentTimeMillis());
 
-//        List<String> itemsToRemove = commands.zrangebyscore(RESERVATION_SET, range);
+        List<String> itemsToRemove = commands.zrangebyscore(RESERVATION_SET, range);
 
         ArrayList<Supplier> commandList = new ArrayList<>();
 
-//        for (String item : itemsToRemove) {
-//
-//            log.info("hi: " + item);
-//
-//            commandList.clear();
-//
-//            commandList.add(() -> commands.watch(item));
-//            commandList.add(() -> commands.multi());
-//            commandList.add(() -> commands.incrby(commands.hget(item, TRIP_ID), Long.parseLong(commands.hget(item, QUANTITY))));
-//            commandList.add(() -> commands.zrem(RESERVATION_SET, item));
-//            commandList.add(() -> commands.del(item));
-//
-//            log.info(String.format("clearance of expired reservation %s - %s", item, RedisUtility.execWithRetries(commands, commandList) != null ? "SUCCESS!" : "FAILED!"));
-//        }
+        for (String item : itemsToRemove) {
+
+            log.info("hi: " + item);
+
+            commandList.clear();
+
+            commandList.add(() -> commands.watch(item));
+            commandList.add(() -> commands.multi());
+            commandList.add(() -> {
+                String itemTripId = commands.hget(item, TRIP_ID);
+                String itemQty = commands.hget(item, QUANTITY);
+                return commands.incrby(itemTripId, Long.parseLong(itemQty));
+            });
+            commandList.add(() -> commands.zrem(RESERVATION_SET, item));
+            commandList.add(() -> commands.del(item));
+
+            log.info(String.format("clearance of expired reservation %s - %s", item, RedisUtility.execWithRetries(commands, commandList) != null ? "SUCCESS!" : "FAILED!"));
+        }
 
         log.info("EXPIRED CLEARING COMPLETE");
     }
@@ -166,7 +172,7 @@ public class ReservationDao {
     public Optional<ReservationResponseItem> reserve(String tripId, String userId, Integer quantity) {
 
         // TODO make this a user specific out-of-date clearance
-//        clearExpiredReservations();
+        clearExpiredReservations();
 
         log.info("USER ID:" + userId);
         log.info("TRIP ID:" + tripId);
