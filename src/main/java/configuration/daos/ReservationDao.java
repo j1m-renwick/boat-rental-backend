@@ -16,10 +16,12 @@ import javax.inject.Inject;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public class ReservationDao {
 
@@ -45,7 +47,7 @@ public class ReservationDao {
         commands = connection.sync();
         // TODO only populate if not in cache already - other instances might be up
         commands.flushdb();
-        for (Map.Entry<String, Integer> entry: tripDao.getAllQuantities().entrySet()) {
+        for (Map.Entry<String, Integer> entry : tripDao.getAllQuantities().entrySet()) {
             commands.set(entry.getKey(), entry.getValue().toString());
         }
     }
@@ -60,24 +62,26 @@ public class ReservationDao {
         Range<Long> range = Range.unbounded();
         range.lt(System.currentTimeMillis());
 
-        List<String> itemsToRemove = commands.zrangebyscore(RESERVATION_SET, range);
+//        List<String> itemsToRemove = commands.zrangebyscore(RESERVATION_SET, range);
 
-        for (String item: itemsToRemove) {
-            // TODO limit this to a certain number of retries
-            do {
-                System.out.println("looping for item:" +item);
-                commands.watch(item);
-                String itemTripId = commands.hget(item, TRIP_ID);
-                String itemQty = commands.hget(item, QUANTITY);
-                commands.multi();
-                commands.incrby(itemTripId, Long.parseLong(itemQty));
-                commands.zrem(RESERVATION_SET, item);
-                commands.del(item);
-            } while (commands.exec().isEmpty());
+        ArrayList<Supplier> commandList = new ArrayList<>();
 
-        }
+//        for (String item : itemsToRemove) {
+//
+//            log.info("hi: " + item);
+//
+//            commandList.clear();
+//
+//            commandList.add(() -> commands.watch(item));
+//            commandList.add(() -> commands.multi());
+//            commandList.add(() -> commands.incrby(commands.hget(item, TRIP_ID), Long.parseLong(commands.hget(item, QUANTITY))));
+//            commandList.add(() -> commands.zrem(RESERVATION_SET, item));
+//            commandList.add(() -> commands.del(item));
+//
+//            log.info(String.format("clearance of expired reservation %s - %s", item, RedisUtility.execWithRetries(commands, commandList) != null ? "SUCCESS!" : "FAILED!"));
+//        }
 
-        log.info(String.format("CLEARING COMPLETE - %s reservations expired.", itemsToRemove.size()));
+        log.info("EXPIRED CLEARING COMPLETE");
     }
 
 
@@ -102,7 +106,6 @@ public class ReservationDao {
      * @param userId the userId to clear the reservation for
      * @return true if the reservation was cleared successfully - else returns false
      */
-    // TODO wrap all multi commands in a retry wrapper
     // TODO instead of empty optionals, throw exceptions with detail and log them
     private boolean clearReservation(String userId) {
         Map<String, String> reservation = commands.hgetall(userId);
@@ -112,18 +115,12 @@ public class ReservationDao {
             return true;
         }
 
-        // retry 10 times before returning false
-        for (int i = 0; i < 10; i++) {
+        ArrayList<Supplier> commandList = new ArrayList<>();
 
-            commands.multi();
-            commands.incrby(reservation.get(TRIP_ID), Long.parseLong(reservation.get(QUANTITY)));
-            commands.del(userId);
-            if (!commands.exec().isEmpty()) {
-                return true;
-            }
-        }
-
-        return false;
+        commandList.add(() -> commands.multi());
+        commandList.add(() -> commands.incrby(reservation.get(TRIP_ID), Long.parseLong(reservation.get(QUANTITY))));
+        commandList.add(() -> commands.del(userId));
+        return RedisUtility.execWithRetries(commands, commandList) != null;
 
     }
 
@@ -140,26 +137,18 @@ public class ReservationDao {
 
         long expiryTime = System.currentTimeMillis() + EXPIRY_TIME_MS;
 
-        TransactionResult result = null;
+        ArrayList<Supplier> commandList = new ArrayList<>();
 
-        for (int i = 0; i < 10; i++) {
-            commands.multi();
-            commands.decrby(tripId, reserveQuantity);
+        commandList.add(() -> commands.multi());
+        commandList.add(() -> commands.decrby(tripId, reserveQuantity));
+        // create hash entry in redis with a key of the userId
+        commandList.add(() -> commands.hmset(userId, map));
+        // add the userId to the sorted set
+        commandList.add(() -> commands.zadd(RESERVATION_SET, expiryTime, userId));
 
-            // create hash entry in redis with a key of the userId
-            commands.hmset(userId, map);
+        TransactionResult result = RedisUtility.execWithRetries(commands, commandList);
 
-            // add the userId to the sorted set
-            commands.zadd(RESERVATION_SET, expiryTime, userId);
-
-            result = commands.exec();
-            if (!result.isEmpty()) {
-                break;
-            }
-
-        }
-
-        if (result.isEmpty()) {
+        if (result == null) {
             return Optional.empty();
         }
 
@@ -177,7 +166,7 @@ public class ReservationDao {
     public Optional<ReservationResponseItem> reserve(String tripId, String userId, Integer quantity) {
 
         // TODO make this a user specific out-of-date clearance
-        clearExpiredReservations();
+//        clearExpiredReservations();
 
         log.info("USER ID:" + userId);
         log.info("TRIP ID:" + tripId);
