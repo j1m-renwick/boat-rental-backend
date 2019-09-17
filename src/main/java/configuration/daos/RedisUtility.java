@@ -3,9 +3,6 @@ package configuration.daos;
 import io.lettuce.core.TransactionResult;
 import io.lettuce.core.api.sync.RedisCommands;
 
-import java.util.ArrayList;
-import java.util.function.Supplier;
-
 public class RedisUtility {
 
     private static final int RETRY_ATTEMPTS = 5;
