@@ -11,7 +11,7 @@ import io.micronaut.http.server.exceptions.ExceptionHandler;
 import javax.inject.Singleton;
 
 @Singleton
-@Requires(classes = {ResourceAlreadyExistsException.class, ExceptionHandler.class})
+@Requires(classes = {ResourceNotFoundException.class, ExceptionHandler.class})
 public class ResourceNotFoundExceptionHandler implements ExceptionHandler<ResourceNotFoundException, HttpResponse> {
 
     @Override
